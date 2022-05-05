@@ -1,13 +1,27 @@
+import { makeStyles } from "@material-ui/core";
 import React, { useState, useEffect } from "react";
 import Post from "../Post/Post";
-import "./Home.scss";
+import PostForm from "../Post/PostForm";
+
+const useStyle = makeStyles((theme) => ({
+  container: {
+    display: "flex",
+    flexDirection: "column",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f0f5ff",
+  },
+}));
 
 function Home() {
   const [error, setError] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [postList, setPostList] = useState([]);
 
-  useEffect(() => {
+  const classes = useStyle();
+
+  const refreshPosts = () => {
     fetch("/posts")
       .then((res) => res.json())
       .then(
@@ -20,7 +34,11 @@ function Home() {
           setError(error);
         }
       );
-  }, []);
+  };
+
+  useEffect(() => {
+    refreshPosts();
+  }, [postList]);
 
   if (error) {
     return <div>Error ocurred</div>;
@@ -28,10 +46,22 @@ function Home() {
     return <div>Loading ...</div>;
   } else {
     return (
-      <div className="container">
-        Home !!!
+      <div className={classes.container}>
+        <PostForm
+          userId={1}
+          userName={"post.userName"}
+          title={"post.title"}
+          text={"post.text"}
+        />
         {postList.map((post) => (
-          <Post title={post.title} text={post.text}></Post>
+          <Post
+            key={post.id}
+            postId={post.id}
+            userId={post.userId}
+            userName={post.userName}
+            title={post.title}
+            text={post.text}
+          ></Post>
         ))}
       </div>
     );
