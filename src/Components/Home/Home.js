@@ -56,6 +56,7 @@ function Home() {
         {postList.map((post) => (
           <Post
             key={post.id}
+            likes={post.postlikes}
             postId={post.id}
             userId={post.userId}
             userName={post.userName}

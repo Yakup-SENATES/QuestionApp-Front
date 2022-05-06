@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import {
   Avatar,
+  Button,
   CardContent,
   InputAdornment,
   OutlinedInput,
@@ -27,18 +28,41 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 function CommentForm(props) {
-  const { text, userId, userName } = props;
+  const { postId, userId, userName } = props;
   const classes = useStyles();
+  const [text, setText] = useState("");
+
+  const saveComment = () => {
+    fetch("/comments", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        postId: postId,
+        userId: userId,
+        text: text,
+      }),
+    })
+      .then((res) => res.json())
+      .catch((error) => console.log(error));
+  };
+  const handleSubmit = () => {
+    saveComment();
+    setText("");
+  };
+  const handleChange = (value) => {
+    setText(value);
+  };
 
   return (
     <CardContent className={classes.comment}>
       <OutlinedInput
-        disabled
         id="outlined-adornment-amount"
         multiline
-        inputProps={{ maxLength: 25 }}
+        inputProps={{ maxLength: 250 }}
         fullWidth
-        value={text}
+        onChange={(i) => handleChange(i.target.value)}
         startAdornment={
           <InputAdornment position="start">
             <Link
@@ -51,6 +75,21 @@ function CommentForm(props) {
             </Link>
           </InputAdornment>
         }
+        endAdornment={
+          <InputAdornment position="end">
+            <Button
+              variant="contained"
+              style={{
+                background: "linear-gradient(45deg,#2196F3 30% , #21CBF3 90%)",
+                color: "white",
+              }}
+              onClick={handleSubmit}
+            >
+              Comment
+            </Button>
+          </InputAdornment>
+        }
+        value={text}
         style={{ color: "black", background: "white" }}
       ></OutlinedInput>
     </CardContent>

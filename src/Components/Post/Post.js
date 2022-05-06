@@ -51,15 +51,16 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 function Post(props) {
-  const { title, text, userId, userName, postId } = props;
+  const { title, text, userId, userName, postId, likes } = props;
   const classes = useStyles();
   const [expanded, setExpanded] = React.useState(false);
-  const [liked, setLiked] = useState(false);
-
+  const [isLiked, setIsLiked] = useState(false);
   const [error, setError] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [commentList, setCommentList] = useState([]);
   const isInitialMount = useRef(true);
+  const [likeCount, setLikeCount] = useState(likes.length);
+  const [likeId, setLikeId] = useState(null);
 
   let disabled = localStorage.getItem("currentUser") == null ? true : false;
 
@@ -82,18 +83,65 @@ function Post(props) {
   const handleExpandClick = () => {
     setExpanded(!expanded);
     refreshComments();
-    console.log("CommentList Gelecek ");
-    console.log(commentList);
+    console.log("likes: ", likes);
+    console.log("CommentList : ", commentList);
   };
 
   const handleLike = () => {
-    setLiked(!liked);
+    setIsLiked(!isLiked);
+    if (!isLiked) {
+      saveLike();
+      setLikeCount(likeCount + 1);
+    } else {
+      deleteLike();
+      setLikeCount(likeCount - 1);
+    }
+  };
+
+  const saveLike = () => {
+    fetch("/likes", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId: userId,
+        postId: postId,
+      }),
+    })
+      .then((res) => res.json())
+      .then(
+        (result) => {
+          console.log(result);
+        },
+        (error) => {
+          console.log(error);
+        }
+      );
+  };
+
+  const checkLikes = () => {
+    var likeControl = likes.find((like) => like.userId === userId);
+    if (likeControl != null) {
+      setLikeId(likeControl.id);
+      setIsLiked(true);
+    }
+  };
+
+  const deleteLike = () => {
+    fetch("/likes/" + likeId, {
+      method: "DELETE",
+    }).catch((error) => console.log(error));
   };
 
   useEffect(() => {
     if (isInitialMount.current) isInitialMount.current = false;
     else refreshComments();
   }, [commentList]);
+
+  useEffect(() => {
+    checkLikes();
+  }, [likes]);
 
   return (
     //<Card className={classes.root} sx={{ width: 800, margin: 2 }}>
@@ -128,11 +176,13 @@ function Post(props) {
             /* style={liked ? { color: "red" } : null}*/
             aria-label="add to favorites"
           >
-            <FavoriteIcon style={liked ? { color: "red" } : null} />
+            <FavoriteIcon style={isLiked ? { color: "red" } : null} />
+            {likeCount}
           </IconButton>
         ) : (
           <IconButton onClick={handleLike} aria-label="add to favorites">
-            <FavoriteIcon style={liked ? { color: "red" } : null} />
+            <FavoriteIcon style={isLiked ? { color: "red" } : null} />
+            {likeCount}
           </IconButton>
         )}
 
@@ -171,6 +221,7 @@ function Post(props) {
                 />
               ))
             : "Loading..."}
+          <CommentForm userId={1} userName={"USER"} postId={postId} />
         </Container>
       </Collapse>
     </Card>
