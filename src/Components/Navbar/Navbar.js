@@ -1,49 +1,79 @@
-import {
-  AppBar,
-  Box,
-  Button,
-  IconButton,
-  Toolbar,
-  Typography,
-} from "@mui/material";
+import { AppBar, IconButton, Toolbar, Typography } from "@mui/material";
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import MenuIcon from "@mui/icons-material/Menu";
+import { makeStyles } from "@material-ui/core";
+import { LockOpen } from "@material-ui/icons";
+
+const useStyles = makeStyles((theme) => ({
+  root: {
+    flexGrow: 1,
+  },
+  menuButton: {
+    marginRight: theme.spacing(2),
+  },
+  title: {
+    flexGrow: 1,
+    textAlign: "left",
+  },
+  link: {
+    textDecoration: "none",
+    boxShadow: "none",
+    color: "white",
+  },
+}));
 
 function Navbar() {
-  let userId = 3;
+  const classes = useStyles();
+  let history = useNavigate();
+
+  const onClick = () => {
+    localStorage.removeItem("tokenKey");
+    localStorage.removeItem("currentUser");
+    localStorage.removeItem("refreshKey");
+    localStorage.removeItem("userName");
+    history.go(0);
+  };
   return (
     <div>
-      <Box sx={{ flexGrow: 1 }}>
-        <AppBar position="static">
-          <Toolbar>
-            <IconButton
-              size="large"
-              edge="start"
-              color="inherit"
-              aria-label="menu"
-              sx={{ mr: 2 }}
-            >
-              <MenuIcon />
-            </IconButton>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              <Link to="/" className="link">
-                Home
-              </Link>
-            </Typography>
-            <Link to={{ pathname: "/users/" + userId }} className="link">
-              User
+      <AppBar position="static">
+        <Toolbar>
+          <IconButton
+            edge="start"
+            className={classes.menuButton}
+            color="inherit"
+            aria-label="menu"
+          >
+            <MenuIcon />
+          </IconButton>
+          <Typography variant="h6" className={classes.title}>
+            <Link className={classes.link} to="/">
+              Home
             </Link>
-          </Toolbar>
-        </AppBar>
-      </Box>
-      <style>
-        {`  .link { 
-        text-decoration: none;
-        boxShadow:none;
-        color: white;
-      `}
-      </style>
+          </Typography>
+          <Typography variant="h6">
+            {localStorage.getItem("currentUser") == null ? (
+              <Link className={classes.link} to="/auth">
+                Login/Register
+              </Link>
+            ) : (
+              <div>
+                <IconButton className={classes.link} onClick={onClick}>
+                  <LockOpen></LockOpen>
+                </IconButton>
+                <Link
+                  className={classes.link}
+                  to={{
+                    pathname: "/users/" + localStorage.getItem("currentUser"),
+                  }}
+                >
+                  Profile
+                </Link>
+              </div>
+            )}
+          </Typography>
+        </Toolbar>
+      </AppBar>
     </div>
   );
 }

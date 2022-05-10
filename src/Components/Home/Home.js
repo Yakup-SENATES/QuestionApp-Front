@@ -38,7 +38,7 @@ function Home() {
 
   useEffect(() => {
     refreshPosts();
-  }, [postList]);
+  }, []);
 
   if (error) {
     return <div>Error ocurred</div>;
@@ -47,16 +47,19 @@ function Home() {
   } else {
     return (
       <div className={classes.container}>
-        <PostForm
-          userId={1}
-          userName={"post.userName"}
-          title={"post.title"}
-          text={"post.text"}
-        />
+        {localStorage.getItem("currentUser") == null ? (
+          ""
+        ) : (
+          <PostForm
+            userId={localStorage.getItem("currentUser")}
+            userName={localStorage.getItem("userName")}
+            refreshPosts={refreshPosts}
+          />
+        )}
         {postList.map((post) => (
           <Post
             key={post.id}
-            likes={post.postlikes}
+            likes={post.postikes}
             postId={post.id}
             userId={post.userId}
             userName={post.userName}

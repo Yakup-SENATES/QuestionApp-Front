@@ -1,15 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 
-import { styled } from "@mui/material/styles";
 import Card from "@mui/material/Card";
 import CardHeader from "@mui/material/CardHeader";
 import CardContent from "@mui/material/CardContent";
 import CardActions from "@mui/material/CardActions";
 import Collapse from "@mui/material/Collapse";
 import Avatar from "@mui/material/Avatar";
-import IconButton, { IconButtonProps } from "@mui/material/IconButton";
+import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
-import { red } from "@mui/material/colors";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import CommentIcon from "@mui/icons-material/Comment";
 import { Link } from "react-router-dom";
@@ -18,6 +16,7 @@ import { Container } from "@mui/material";
 import Comment from "../Comment/Comment";
 import clsx from "clsx";
 import CommentForm from "../Comment/CommentForm";
+import { DeleteWithAuth, PostWithAuth } from "../Services/HttpService";
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -31,14 +30,14 @@ const useStyles = makeStyles((theme) => ({
   },
   expand: {
     transform: "rotate(0deg)",
-    position: "end",
     float: "right",
+    margin: "auto",
     //transition: theme.transitions.create("transform", {
     //  duration: theme.transitions.duration.shortest,
     //}),
   },
   expandOpen: {
-    transform: "rotate(180deg)",
+    transform: "rotate(90deg)",
   },
   avatar: {
     background: "linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)",
@@ -61,9 +60,28 @@ function Post(props) {
   const isInitialMount = useRef(true);
   const [likeCount, setLikeCount] = useState(likes.length);
   const [likeId, setLikeId] = useState(null);
+  const [refresh, setRefresh] = useState(false);
 
   let disabled = localStorage.getItem("currentUser") == null ? true : false;
 
+  const setCommentRefresh = () => {
+    setRefresh(true);
+  };
+  const handleExpandClick = () => {
+    setExpanded(!expanded);
+    refreshComments();
+    console.log("CommentList : ", commentList);
+  };
+  const handleLike = () => {
+    setIsLiked(!isLiked);
+    if (!isLiked) {
+      saveLike();
+      setLikeCount(likeCount + 1);
+    } else {
+      deleteLike();
+      setLikeCount(likeCount - 1);
+    }
+  };
   const refreshComments = () => {
     fetch("/comments?postId=" + postId)
       .then((res) => res.json())
@@ -80,68 +98,37 @@ function Post(props) {
       );
   };
 
-  const handleExpandClick = () => {
-    setExpanded(!expanded);
-    refreshComments();
-    console.log("likes: ", likes);
-    console.log("CommentList : ", commentList);
-  };
-
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-    if (!isLiked) {
-      saveLike();
-      setLikeCount(likeCount + 1);
-    } else {
-      deleteLike();
-      setLikeCount(likeCount - 1);
-    }
-  };
-
   const saveLike = () => {
-    fetch("/likes", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        userId: userId,
-        postId: postId,
-      }),
+    PostWithAuth("/likes", {
+      postId: postId,
+      userId: localStorage.getItem("currentUser"),
     })
       .then((res) => res.json())
-      .then(
-        (result) => {
-          console.log(result);
-        },
-        (error) => {
-          console.log(error);
-        }
-      );
+      .catch((err) => console.log(err));
+  };
+
+  const deleteLike = () => {
+    DeleteWithAuth("/likes/" + likeId).catch((err) => console.log(err));
   };
 
   const checkLikes = () => {
-    var likeControl = likes.find((like) => like.userId === userId);
+    var likeControl = likes.find(
+      (like) => "" + like.userId === localStorage.getItem("currentUser")
+    );
     if (likeControl != null) {
       setLikeId(likeControl.id);
       setIsLiked(true);
     }
   };
 
-  const deleteLike = () => {
-    fetch("/likes/" + likeId, {
-      method: "DELETE",
-    }).catch((error) => console.log(error));
-  };
-
   useEffect(() => {
     if (isInitialMount.current) isInitialMount.current = false;
     else refreshComments();
-  }, [commentList]);
+  }, [refresh]);
 
   useEffect(() => {
     checkLikes();
-  }, [likes]);
+  }, []);
 
   return (
     //<Card className={classes.root} sx={{ width: 800, margin: 2 }}>
@@ -173,18 +160,16 @@ function Post(props) {
           <IconButton
             disabled
             onClick={handleLike}
-            /* style={liked ? { color: "red" } : null}*/
             aria-label="add to favorites"
           >
             <FavoriteIcon style={isLiked ? { color: "red" } : null} />
-            {likeCount}
           </IconButton>
         ) : (
           <IconButton onClick={handleLike} aria-label="add to favorites">
             <FavoriteIcon style={isLiked ? { color: "red" } : null} />
-            {likeCount}
           </IconButton>
         )}
+        {likeCount}
 
         <IconButton
           className={clsx(classes.expand, {
@@ -196,16 +181,6 @@ function Post(props) {
         >
           <CommentIcon />
         </IconButton>
-
-        {/*<ExpandMore
-          position="end"
-          expand={expanded}
-          onClick={handleExpandClick}
-          aria-expanded={expanded}
-          aria-label="show more"
-        >
-          <CommentIcon />
-        </ExpandMore>*/}
       </CardActions>
       <Collapse in={expanded} timeout="auto" unmountOnExit>
         <Container fixed className={classes.container}>
@@ -215,13 +190,18 @@ function Post(props) {
             ? commentList.map((comment) => (
                 <Comment
                   key={comment.id}
-                  userId={1}
-                  userName={"USER"}
+                  userId={comment.userId}
+                  userName={comment.userName}
                   text={comment.text}
                 />
               ))
             : "Loading..."}
-          <CommentForm userId={1} userName={"USER"} postId={postId} />
+          <CommentForm
+            userId={localStorage.getItem("currentUser")}
+            userName={localStorage.getItem("userName")}
+            postId={postId}
+            setCommentRefresh={setCommentRefresh}
+          />
         </Container>
       </Collapse>
     </Card>
