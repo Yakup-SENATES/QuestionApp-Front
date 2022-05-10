@@ -31,10 +31,10 @@ const useStyles = makeStyles((theme) => ({
   expand: {
     transform: "rotate(0deg)",
     float: "right",
-    margin: "auto",
-    //transition: theme.transitions.create("transform", {
-    //  duration: theme.transitions.duration.shortest,
-    //}),
+    marginLeft: "auto",
+    transition: theme.transitions.create("transform", {
+      duration: theme.transitions.duration.shortest,
+    }),
   },
   expandOpen: {
     transform: "rotate(90deg)",
@@ -151,7 +151,7 @@ function Post(props) {
       />
 
       <CardContent>
-        <Typography variant="body2" color="text.secondary" component="p">
+        <Typography variant="body2" color="text.secondary" component="div">
           {text}
         </Typography>
       </CardContent>

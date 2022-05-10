@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { makeStyles } from "@material-ui/core/styles";
+import { useNavigate } from "react-router";
+import { PostWithAuth, RefreshToken } from "../Services/HttpService";
 import {
   Avatar,
   Button,
   CardContent,
   InputAdornment,
   OutlinedInput,
-} from "@mui/material";
+} from "@material-ui/core";
 import { Link } from "react-router-dom";
 
 const useStyles = makeStyles((theme) => ({
@@ -28,29 +30,60 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 function CommentForm(props) {
-  const { postId, userId, userName } = props;
+  const { postId, userId, userName, setCommentRefresh } = props;
   const classes = useStyles();
   const [text, setText] = useState("");
 
+  let history = useNavigate();
+
+  const logout = () => {
+    localStorage.removeItem("tokenKey");
+    localStorage.removeItem("currentUser");
+    localStorage.removeItem("refreshKey");
+    localStorage.removeItem("userName");
+    history.push("/");
+  };
+
   const saveComment = () => {
-    fetch("/comments", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        postId: postId,
-        userId: userId,
-        text: text,
-      }),
+    PostWithAuth("/comments", {
+      postId: postId,
+      userId: userId,
+      text: text,
     })
-      .then((res) => res.json())
-      .catch((error) => console.log(error));
+      .then((res) => {
+        if (!res.ok) {
+          RefreshToken()
+            .then((res) => {
+              if (!res.ok) {
+                logout();
+              } else {
+                return res.json();
+              }
+            })
+            .then((result) => {
+              console.log(result);
+
+              if (result != undefined) {
+                localStorage.setItem("tokenKey", result.accessToken);
+                saveComment();
+                setCommentRefresh();
+              }
+            })
+            .catch((err) => {
+              console.log(err);
+            });
+        } else res.json();
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   };
   const handleSubmit = () => {
     saveComment();
     setText("");
+    setCommentRefresh();
   };
+
   const handleChange = (value) => {
     setText(value);
   };
